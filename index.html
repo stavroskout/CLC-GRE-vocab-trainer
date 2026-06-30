@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GRE Vocab">
+<meta name="theme-color" content="#0b1220">
+<title>GRE Vocab</title>
+<style>
+  :root {
+    --bg: #0b1220; --card: #161f33; --card2: #1e2940; --text: #f1f5f9;
+    --muted: #94a3b8; --tint: #3b82f6; --green: #22c55e; --red: #ef4444;
+    --border: #2a3550;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  #app { max-width: 560px; margin: 0 auto; padding: 16px; min-height: 100vh; display: flex; flex-direction: column; }
+  h1 { font-size: 26px; margin: 8px 4px 20px; }
+  h2 { font-size: 20px; margin: 4px 4px 16px; }
+  .nav { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; min-height: 32px; }
+  .back { background: none; border: none; color: var(--tint); font-size: 17px; padding: 6px 4px; cursor: pointer; }
+  .row {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 14px;
+    cursor: pointer; transition: background .15s; width: 100%; text-align: left; color: inherit;
+  }
+  .row:active { background: var(--card2); }
+  .row[disabled] { opacity: .45; cursor: default; }
+  .row .ico { font-size: 22px; width: 30px; text-align: center; }
+  .row .title { font-size: 17px; font-weight: 600; }
+  .row .sub { font-size: 14px; color: var(--muted); margin-top: 2px; }
+  .row .chev { margin-left: auto; color: var(--muted); }
+  .spacer { flex: 1; }
+  .progress { height: 6px; background: var(--card2); border-radius: 3px; overflow: hidden; margin: 6px 0 4px; }
+  .progress > div { height: 100%; background: var(--tint); transition: width .25s; }
+  .counter { text-align: center; color: var(--muted); font-size: 14px; margin: 6px 0 18px; }
+  .word { text-align: center; font-size: 34px; font-weight: 700; font-family: Georgia, "Times New Roman", serif; margin: 12px 8px; }
+  .syn { text-align: center; color: var(--muted); font-size: 15px; margin: -4px 8px 8px; min-height: 20px; }
+  .opt {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; margin-bottom: 10px; font-size: 18px; cursor: pointer; width: 100%;
+    color: inherit; text-align: left; transition: background .12s;
+  }
+  .opt:active { filter: brightness(1.15); }
+  .opt.correct { background: rgba(34,197,94,.18); border-color: var(--green); color: var(--green); }
+  .opt.wrong { background: rgba(239,68,68,.18); border-color: var(--red); color: var(--red); }
+  .opt.locked { cursor: default; }
+  .opt .mark { font-size: 18px; }
+  .btn {
+    display: block; width: 100%; border: none; border-radius: 12px; padding: 16px;
+    font-size: 17px; font-weight: 600; background: var(--tint); color: white; cursor: pointer; margin-top: 8px;
+  }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn.ghost { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+  .sheet-back {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex;
+    align-items: flex-end; justify-content: center; z-index: 10;
+  }
+  .sheet { background: var(--card); width: 100%; max-width: 560px; border-radius: 18px 18px 0 0; padding: 12px; }
+  .sheet .sheet-title { text-align: center; color: var(--muted); font-size: 13px; padding: 10px; }
+  .sheet button { width: 100%; border: none; background: var(--card2); color: var(--text);
+    font-size: 17px; padding: 16px; border-radius: 10px; margin-bottom: 8px; cursor: pointer; }
+  .sheet button.cancel { background: transparent; color: var(--tint); font-weight: 600; }
+  .result-icon { text-align: center; font-size: 56px; margin: 12px 0 6px; }
+  .score { text-align: center; font-size: 30px; font-weight: 700; }
+  .result-sub { text-align: center; color: var(--muted); font-size: 14px; margin: 6px 16px 16px; }
+  .review-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
+  .review-item .w { font-weight: 600; }
+  .review-item .t { color: var(--muted); margin-top: 2px; }
+  .review-item .s { color: var(--muted); opacity: .7; font-size: 13px; margin-top: 2px; }
+  .empty { text-align: center; color: var(--muted); margin-top: 40px; }
+  .scroll { overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* Separate block: a parse error in the main script below still fires this,
+   so the phone shows the real error instead of a blank screen. */
+window.addEventListener("error", function (e) {
+  var box = document.getElementById("app");
+  if (box) box.innerHTML =
+    "<pre style='color:#fca5a5;white-space:pre-wrap;padding:16px;font:13px monospace'>" +
+    "Error: " + (e.message || (e.error && e.error.message) || e) +
+    "\n" + (e.filename || "") + (e.lineno ? ":" + e.lineno : "") + "</pre>";
+});
+</script>
+<script>
+const WEEKS_RAW = {"1": "word,translation,synonyms\nequanimity,ψυχραιμία,\"composure, serenity\"\nimpetuosity,ορμητικότητα,\"rashness, impulsivity\"\nperemptoriness,επιτακτικότητα,\"imperious, domineering\"\ndiffidence,επιφυλακτικότητα,\"timidity, tentative\"\nautocracy,αυταρχία,\"dictatorship, tyranny\"\nparsimony,φειδωλία,\"frugality, avarice\"\nsurfeit,κορεσμός,\"plethora, excess\"\nplethora,αφθονία,\"surfeit, abundance\"\ndearth,σπάνη,\"paucity, scarcity\"\npaucity,σπανιότητα,\"dearth, scarcity\"\nmediocre,μέτριος,\"pedestrian, prosaic\"\ntranscendent,υπερβατικός,\"superlative, sublime\"\npedestrian (adj.),κοινότοπος,\"mediocre, prosaic\"\nsuperlative,υπέρτατος,\"transcendent, paramount\"\nmuted,χαμηλόφωνος,\"subdued, restrained\"\ntentative,διστακτικός,\"hesitant, diffident\"\ninclusive,περιεκτικός,\"comprehensive, encompassing\"\nimperious,δεσποτικός,\"peremptory, obdurate\"\ncollegiate,συλλογικός,\"cooperative, collaborative\"\nobdurate,ανένδοτος,\"recalcitrant, intransigent\"\ncapricious,ιδιότροπος,\"erratic, arbitrary\"\nintrepid,ατρόμητος,\"audacious, bold\"\ndilatory,αναβλητικός,\"tardy, procrastinating\"\ntardy,καθυστερημένος,\"dilatory, sluggish\"\nexpeditious,αποτελεσματικός,\"prompt, alacrity\"\nprescient,προφητικός,\"foresighted, prophetic\"\nmeretricious,επίπλαστος,\"tawdry, specious\"\ntransient,παροδικός,\"evanescent, ephemeral\"\nperennial,διαχρονικός,\"enduring, lasting\"\nevanescent,εφήμερος,\"transient, fleeting\"\nbanal,κοινότοπος,\"trite, hackneyed\"\ntrite,τετριμμένος,\"banal, hackneyed\"\nhackneyed,κλισέ,\"trite, banal\"\nerudite,πολυμαθής,\"learned, scholarly\"\nperspicacious,οξυδερκής,\"insightful, shrewd\"\nabstruse,δυσνόητος,\"obscure, recondite\"\njettison,απορρίπτω,\"discard, relinquish\"\nconsolidate,ενοποιώ,\"merge, strengthen\"\nrelinquish,εγκαταλείπω,\"jettison, forsake\"\nbuttress,ενισχύω,\"reinforce, champion\"\nchampion (verb),υποστηρίζω,\"advocate, buttress\"\nperspicuity,σαφήνεια,\"clarity, candour\"\nopacity,ασάφεια,\"obscurity, inscrutability\"\ninscrutability,αδιαφάνεια,\"opacity, mystery\"\ncandour,ειλικρίνεια,\"frankness, probity\"\nprobity,ακεραιότητα,\"integrity, candour\"\nproactive,πρωτοβουλιακός,\"anticipatory, forward-thinking\"\nexpedient,σκόπιμος,\"practical, pragmatic\"\nprosaic,πεζός,\"mediocre, pedestrian\"\njejune,ανούσιος,\"insipid, banal\"\nmordant,δηκτικός,\"caustic, trenchant\"\nevocative,υπαινικτικός,\"suggestive, reminiscent\"\nprecipitance,προπέτεια,\"rashness, temerity\"\ncircumspection,σύνεση,\"caution, prudence\"\ntemerity,θρασύτητα,\"audacity, precipitance\"\ncaution,προσοχή,\"circumspection, prudence\"\nimpulsivity,παρορμητικότητα,\"rashness, precipitance\"\nalacrity,προθυμία,\"eagerness, promptness\"\ntrenchant,διεισδυτικός,\"incisive, mordant\"\nperfunctory,επιπόλαιος,\"cursory, superficial\"\nincisive,οξύς,\"trenchant, mordant\"\ntendentious,μεροληπτικός,\"biased, partisan\"\nequivocal,διφορούμενος,\"ambiguous, evasiveness\"\nextant,υφιστάμενος,\"existing, surviving\"\nseminal,πρωτοποριακός,\"influential, groundbreaking\"\nforthright,ευθύς,\"candid, frank\"\nevasiveness,αποφευκτικότητα,\"equivocal, indirection\"\nconvoluted,περίπλοκος,\"intricate, elaborate\"\nelaborate (adj.),λεπτομερής,\"intricate, convoluted\"\nintricate,σύνθετος,\"convoluted, elaborate\"\nequitable,δίκαιος,\"fair, judicious\"\narbitrary,αυθαίρετος,\"capricious, erratic\"\nerratic,ακανόνιστος,\"capricious, arbitrary\"\nrecalcitrant,ανυπότακτος,\"obdurate, stubborn\"\njudicious,συνετός,\"prudent, circumspect\"\nsanguine,αισιόδοξος,\"optimistic, hopeful\"\nstilted,τεχνητός,\"pompous, bombastic\"\nbombastic,κομπαστικός,\"pompous, turgid\"\nturgid,φουσκωμένος,\"pompous, bombastic\"\navarice,πλεονεξία,\"greed, parsimony\"\nmunificence,γενναιοδωρία,\"generosity, beneficence\"\nbeneficence,ευεργεσία,\"goodness, munificence\"\nfrugality,λιτότητα,\"parsimony, thrift\"\nprofligacy,σπατάλη,\"extravagance, wastefulness\"\naudacious,τολμηρός,\"intrepid, bold\"\nderivative (adj.),μιμητικός,\"unoriginal, imitative\"\nscrupulousness,ευσυνειδησία,\"meticulousness, conscientiousness\"\nmeticulousness,λεπτολογία,\"scrupulousness, precision\"\nindolence,οκνηρία,\"laziness, sloth\"\ngregarious,κοινωνικός,\"sociable, effusive\"\neffusive,εκδηλωτικός,\"gushing, gregarious\"\nstandoffish,ψυχρός,\"aloof, taciturn\"\ngarrulous,φλύαρος,\"loquacious, talkative\"\ntaciturn,λιγομίλητος,\"reserved, reticent\"\nloquacious,πολυλογάς,\"garrulous, verbose\"\nglaring,κραυγαλέος,\"stark, manifest\"\nstark,έντονος,\"glaring, bare\"\nnuanced,λεπτός,\"subtle, delicate\"\ntenuous,αδύναμος,\"weak, flimsy\"\nunambiguous,σαφής,\"clear, forthright\"\nmanifest (adj.),προφανής,\"obvious, glaring\"\ninchoate,αδιαμόρφωτος,\"rudimentary, nascent\"\namalgamate,συγχωνεύω,\"consolidate, merge\"\neffrontery,αναίδεια,\"audacity, temerity\"\nrarefy,αραιώνω,\"thin, dilute\"\ndiatribe,τιράδα,\"tirade, polemic\"\ndisabuse,διορθώνω,\"enlighten, correct\"\naver,βεβαιώνω,\"assert, affirm\"\nbolster,στηρίζω,\"buttress, reinforce\"\ndeliberate (adj.),εσκεμμένος,\"intentional, judicious\"\nassuage,καταπραΰνω,\"placate, mollify\"\nlucid,διαυγής,\"clear, cogent\"\nenervate,εξασθενίζω,\"sap, debilitate\"\nmorose,σκυθρωπός,\"sullen, taciturn\"\neulogy,εγκώμιο,\"panegyric, tribute\"\nplacate,εξευμενίζω,\"mollify, assuage\"\nmollify,πραΰνω,\"placate, assuage\"\nantagonism,εχθρότητα,\"hostility, enmity\"\nmundane,κοσμικός,\"pedestrian, prosaic\"\nquotidian,καθημερινός,\"mundane, pedestrian\"\nburgeon,ανθίζω,\"flourish, proliferate\"\nsap,υπονομεύω,\"enervate, undermine\"\noccult,αποκρυφιστικός,\"mystical, arcane\"\ngainsay,αντικρούω,\"contradict, refute\"\npith,ουσία,\"gist, essence\"\ngist,νόημα,\"pith, essence\"\ncorroborate,επιβεβαιώνω,\"confirm, substantiate\"\nplasticity,πλαστικότητα,\"flexibility, malleability\"\nebullience,ζωηρότητα,\"exuberance, effusive\"\nartless,αφελής,\"ingenuous, candid\"\nartifice,τέχνασμα,\"trickery, guile\"\nprecarious,επισφαλής,\"tenuous, unstable\"\ndin,θόρυβος,\"clamor, tumult\"\ndefault (v),αθετώ,\"renege, forfeit\"\ntortuous,σκολιός,\"convoluted, sinuous\"\nprofuse,άφθονος,\"plentiful, copious\"\npropitiate,κατευνάζω,\"appease, placate\"\nzenith,απόγειο,\"apex, pinnacle\"\ndesiccate,αφυδατώνω,\"parch, wither\"\nveneration,σεβασμός,\"reverence, deference\"\nsanction (n),κύρωση,\"penalty, prohibition\"\ncomplaisant,εξυπηρετικός,\"obliging, acquiescent\"\nubiquitous,πανταχού παρών,\"omnipresent, pervasive\"\ndistend,διαστέλλω,\"inflate, swell\"\nvacillate,ταλαντεύομαι,\"waver, equivocal\"\nperfidy,προδοσία,\"treachery, duplicity\"\nfracas (n),αναταραχή,\"commotion, tumult\"\nexplicit,ρητός,\"unambiguous, forthright\"\npresumptuous,αυθάδης,\"audacious, impertinent\"\nextraneous,άσχετος,\"irrelevant, superfluous\"\n"};
+
+// ---------- CSV parsing ----------
+function splitCSVLine(line) {
+  const out = []; let cur = "", q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (q && line[i+1] === '"') { cur += '"'; i++; }
+      else q = !q;
+    } else if (ch === ',' && !q) { out.push(cur); cur = ""; }
+    else cur += ch;
+  }
+  out.push(cur); return out;
+}
+function parseCSV(text) {
+  const words = [];
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+  for (let i = 1; i < lines.length; i++) {
+    const f = splitCSVLine(lines[i]);
+    if (f.length < 2) continue;
+    const word = f[0].trim(), translation = f[1].trim();
+    if (!word || !translation) continue;
+    const synonyms = f.length >= 3
+      ? f[2].split(',').map(s => s.trim()).filter(Boolean) : [];
+    words.push({ word, translation, synonyms });
+  }
+  return words;
+}
+function normKey(word) {
+  return word.split('(')[0].trim().toLowerCase();
+}
+
+// ---------- Distractor engine (union-find clusters) ----------
+function buildEngine(words) {
+  const parent = words.map((_, i) => i);
+  const find = x => { while (parent[x] !== x) x = parent[x]; return x; };
+  const union = (a, b) => { const ra = find(a), rb = find(b); if (ra !== rb) parent[rb] = ra; };
+  const keyMap = {}, trMap = {};
+  words.forEach((w, i) => {
+    const k = normKey(w.word);
+    (keyMap[k] = keyMap[k] || []).push(i);
+    (trMap[w.translation] = trMap[w.translation] || []).push(i);
+  });
+  Object.values(trMap).forEach(idx => { for (let j = 1; j < idx.length; j++) union(idx[0], idx[j]); });
+  words.forEach((w, i) => w.synonyms.forEach(s => {
+    const m = keyMap[s.trim().toLowerCase()];
+    if (m) m.forEach(j => union(i, j));
+  }));
+  function distractors(index, count) {
+    const root = find(index);
+    const order = shuffle(words.map((_, i) => i));
+    const seen = new Set([words[index].translation]);
+    const res = [];
+    for (const i of order) {
+      if (find(i) === root) continue;
+      const t = words[i].translation;
+      if (!seen.has(t)) { seen.add(t); res.push(t); if (res.length === count) return res; }
+    }
+    for (const i of order) {
+      const t = words[i].translation;
+      if (!seen.has(t)) { seen.add(t); res.push(t); if (res.length === count) break; }
+    }
+    return res;
+  }
+  return { distractors };
+}
+function shuffle(a) {
+  a = a.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i+1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+// ---------- Data ----------
+const WEEK_WORDS = {};
+const WEEK_NUMS = Object.keys(WEEKS_RAW).map(Number).sort((a,b) => a-b);
+WEEK_NUMS.forEach(n => { WEEK_WORDS[n] = parseCSV(WEEKS_RAW[n]); });
+
+// ---------- Mistakes persistence (localStorage) ----------
+function mistakesKey(n) { return "gre_mistakes_week_" + n; }
+function loadMistakes(n) {
+  try { return new Set(JSON.parse(localStorage.getItem(mistakesKey(n)) || "[]")); }
+  catch { return new Set(); }
+}
+function saveMistakes(n, set) {
+  localStorage.setItem(mistakesKey(n), JSON.stringify([...set]));
+}
+
+// ---------- Quiz building ----------
+function makeQuestions(weekNum, mode, count) {
+  const all = WEEK_WORDS[weekNum];
+  const engine = buildEngine(all);
+  let pool;
+  if (mode === "mistakes") {
+    const missed = loadMistakes(weekNum);
+    pool = all.filter(w => missed.has(w.word));
+  } else pool = all.slice();
+  let selected = shuffle(pool);
+  if (count && count < selected.length) selected = selected.slice(0, count);
+  return selected.map(w => {
+    const idx = all.indexOf(w);
+    const opts = shuffle([w.translation, ...engine.distractors(idx, 3)]);
+    return { word: w, options: opts, answer: w.translation };
+  });
+}
+
+// ---------- App state & rendering ----------
+const app = document.getElementById("app");
+let state = { screen: "home" };
+
+function go(s) { state = s; render(); }
+
+function render() {
+  app.innerHTML = "";
+  ({ home: renderHome, week: renderWeek, quiz: renderQuiz, results: renderResults })[state.screen]();
+}
+
+function el(tag, props = {}, children = []) {
+  const e = document.createElement(tag);
+  for (const k in props) {
+    if (k === "class") e.className = props[k];
+    else if (k === "html") e.innerHTML = props[k];
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), props[k]);
+    else if (k === "disabled") { if (props[k]) e.setAttribute("disabled", ""); }
+    else e.setAttribute(k, props[k]);
+  }
+  (Array.isArray(children) ? children : [children]).forEach(c => {
+    if (c == null) return;
+    e.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+  });
+  return e;
+}
+
+function renderHome() {
+  app.appendChild(el("h1", {}, "GRE Vocab"));
+  if (!WEEK_NUMS.length) { app.appendChild(el("div", { class: "empty" }, "No weeks found.")); return; }
+  WEEK_NUMS.forEach(n => {
+    app.appendChild(el("button", { class: "row", onclick: () => go({ screen: "week", week: n }) }, [
+      el("span", { class: "ico" }, "📅"),
+      el("div", {}, [ el("div", { class: "title" }, "Week " + n),
+                      el("div", { class: "sub" }, WEEK_WORDS[n].length + " words") ]),
+      el("span", { class: "chev" }, "›"),
+    ]));
+  });
+}
+
+function renderWeek() {
+  const n = state.week;
+  const total = WEEK_WORDS[n].length;
+  const mcount = loadMistakes(n).size;
+  app.appendChild(navBar(() => go({ screen: "home" }), "Week " + n));
+
+  app.appendChild(modeRow("📖", "Vocabulary Test", total + " words", total,
+    cnt => startQuiz(n, "full", cnt)));
+
+  app.appendChild(modeRow("🔁", "Train on Mistakes",
+    mcount === 0 ? "No saved mistakes yet" : mcount + (mcount === 1 ? " word to review" : " words to review"),
+    mcount, cnt => startQuiz(n, "mistakes", cnt)));
+
+  app.appendChild(el("div", { class: "sub", style: "margin:8px 6px;color:var(--muted)" },
+    "Mistakes come from your last Vocabulary Test. Getting one right here removes it from the list."));
+}
+
+function navBar(onBack, title) {
+  return el("div", { class: "nav" }, [
+    el("button", { class: "back", onclick: onBack }, "‹ Back"),
+    el("div", { style: "font-weight:600" }, title),
+  ]);
+}
+
+function modeRow(ico, title, sub, available, start) {
+  const disabled = available === 0;
+  return el("button", {
+    class: "row", disabled,
+    onclick: disabled ? null : () => showLengthSheet(available, start),
+  }, [
+    el("span", { class: "ico" }, ico),
+    el("div", {}, [ el("div", { class: "title" }, title), el("div", { class: "sub" }, sub) ]),
+    disabled ? null : el("span", { class: "chev" }, "›"),
+  ]);
+}
+
+function showLengthSheet(available, start) {
+  const choices = [10, 20, 50].filter(c => c < available);
+  const sheet = el("div", { class: "sheet" }, [ el("div", { class: "sheet-title" }, "How many words?") ]);
+  choices.forEach(c => sheet.appendChild(el("button", { onclick: () => { closeSheet(); start(c); } }, c + " words")));
+  sheet.appendChild(el("button", { onclick: () => { closeSheet(); start(null); } }, "All (" + available + ")"));
+  sheet.appendChild(el("button", { class: "cancel", onclick: closeSheet }, "Cancel"));
+  const back = el("div", { class: "sheet-back", onclick: e => { if (e.target === back) closeSheet(); } }, [sheet]);
+  back.id = "sheet";
+  document.body.appendChild(back);
+}
+function closeSheet() { const s = document.getElementById("sheet"); if (s) s.remove(); }
+
+function startQuiz(weekNum, mode, count) {
+  const questions = makeQuestions(weekNum, mode, count);
+  go({ screen: "quiz", week: weekNum, mode, questions, index: 0,
+       selected: null, wrong: [], correct: [] });
+}
+
+function renderQuiz() {
+  const s = state;
+  if (!s.questions.length) {
+    app.appendChild(navBar(() => go({ screen: "week", week: s.week }), ""));
+    app.appendChild(el("div", { class: "empty" }, "Nothing to practice here yet."));
+    return;
+  }
+  const q = s.questions[s.index];
+  const answered = s.selected !== null;
+
+  app.appendChild(navBar(() => go({ screen: "week", week: s.week }),
+    s.mode === "mistakes" ? "Train on Mistakes" : "Vocabulary Test"));
+
+  const pct = (s.index + (answered ? 1 : 0)) / s.questions.length * 100;
+  app.appendChild(el("div", { class: "progress" }, [ el("div", { style: "width:" + pct + "%" }) ]));
+  app.appendChild(el("div", { class: "counter" }, "Word " + (s.index + 1) + " of " + s.questions.length));
+
+  app.appendChild(el("div", { class: "spacer" }));
+  app.appendChild(el("div", { class: "word" }, q.word.word));
+  app.appendChild(el("div", { class: "syn" },
+    answered && q.word.synonyms.length ? "synonyms: " + q.word.synonyms.join(", ") : ""));
+  app.appendChild(el("div", { class: "spacer" }));
+
+  q.options.forEach(opt => {
+    let cls = "opt";
+    let mark = "";
+    if (answered) {
+      cls += " locked";
+      if (opt === q.answer) { cls += " correct"; mark = "✓"; }
+      else if (opt === s.selected) { cls += " wrong"; mark = "✗"; }
+    }
+    app.appendChild(el("button", { class: cls, onclick: answered ? null : () => choose(opt) }, [
+      el("span", {}, opt), el("span", { class: "mark" }, mark),
+    ]));
+  });
+
+  const last = s.index + 1 === s.questions.length;
+  app.appendChild(el("button", {
+    class: "btn", disabled: !answered, onclick: answered ? advance : null,
+  }, last ? "Finish" : "Next"));
+}
+
+function choose(opt) {
+  const s = state, q = s.questions[s.index];
+  s.selected = opt;
+  (opt === q.answer ? s.correct : s.wrong).push(q.word);
+  render();
+}
+
+function advance() {
+  const s = state;
+  if (s.index + 1 < s.questions.length) { s.index++; s.selected = null; render(); }
+  else finish();
+}
+
+function finish() {
+  const s = state;
+  if (s.mode === "full") {
+    saveMistakes(s.week, new Set(s.wrong.map(w => w.word)));
+  } else {
+    const remaining = loadMistakes(s.week);
+    s.correct.forEach(w => remaining.delete(w.word));
+    saveMistakes(s.week, remaining);
+  }
+  go({ screen: "results", week: s.week, mode: s.mode,
+       total: s.questions.length, wrong: s.wrong });
+}
+
+function renderResults() {
+  const s = state;
+  const correctCount = s.total - s.wrong.length;
+  const perfect = s.wrong.length === 0;
+  app.appendChild(el("div", { class: "result-icon" }, perfect ? "🌟" : "✅"));
+  app.appendChild(el("div", { class: "score" }, correctCount + " / " + s.total + " correct"));
+
+  let sub;
+  if (s.mode === "full") sub = perfect ? "Your mistakes list is now empty." : "Missed words were saved to your mistakes list.";
+  else sub = perfect ? "All mistakes cleared from this week!" : "Words you got right were removed from the list.";
+  app.appendChild(el("div", { class: "result-sub" }, sub));
+
+  if (perfect) {
+    app.appendChild(el("div", { class: "empty" }, "Perfect — no mistakes!"));
+  } else {
+    const scroll = el("div", { class: "scroll" });
+    s.wrong.forEach(w => {
+      scroll.appendChild(el("div", { class: "review-item" }, [
+        el("div", { class: "w" }, w.word),
+        el("div", { class: "t" }, w.translation),
+        w.synonyms.length ? el("div", { class: "s" }, w.synonyms.join(", ")) : null,
+      ]));
+    });
+    app.appendChild(scroll);
+  }
+  app.appendChild(el("button", { class: "btn", onclick: () => go({ screen: "home" }) }, "Done"));
+}
+
+render();
+</script>
+</body>
+</html>
